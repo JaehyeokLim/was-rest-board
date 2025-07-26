@@ -59,14 +59,16 @@ public class UserController {
         httpResponse.flush();
     }
 
-    @Mapping(path = "/logout",  method = GET)
+    @Mapping(path = "/logout", method = GET)
     public void logout(HttpRequest httpRequest, HttpResponse httpResponse) throws IOException {
         String sessionId = httpRequest.getCookie("sessionId");
 
         if (sessionId != null) {
-            log("Successfully deleted logged in session: " +  sessionId);
-            httpResponse.addCookie("sessionId", "deleted; Max-Age=0; Path=/");
             removeSession(sessionId);
+            log("Successfully deleted logged in session: " + sessionId);
+            httpResponse.addCookie("sessionId", "deleted; Max-Age=0; Path=/");
+        } else {
+            log("No session ID found during logout");
         }
 
         log("Successfully logged out");
@@ -74,7 +76,6 @@ public class UserController {
         httpResponse.writeBody("Successfully logged out! ");
         httpResponse.writeBody("<a href='/'>Go to Home</a>");
         httpResponse.flush();
-
     }
 
     @Mapping(path = "/signup", method = GET)
@@ -152,6 +153,52 @@ public class UserController {
         httpResponse.setStatusCode(CREATED);
         httpResponse.writeBody("Successfully signed up! ");
         httpResponse.writeBody("<a href='/'>Back to Home</a>");
+        httpResponse.flush();
+    }
+
+
+    @Mapping(path = "/account", method = GET)
+    public void account(HttpRequest httpRequest, HttpResponse httpResponse) throws IOException {
+        String sessionId = httpRequest.getCookie("sessionId");
+        User user = (sessionId != null) ? getSession(sessionId) : null;
+
+        if (user == null) {
+            log("Unauthorized access to account");
+            httpResponse.setStatusCode(UNAUTHORIZED);
+            httpResponse.writeBody("Unauthorized access to account! ");
+            httpResponse.writeBody("<a href='/'>Back to Home</a>");
+            httpResponse.flush();
+            return;
+        }
+
+        log("Account page requested by user: " + user);
+
+        String html = """
+            <html>
+            <body>
+                <h1>Account</h1>
+                <div>
+                    <p>ID: %s</p>
+                </div>
+                <div>
+                    <p>Name: %s</p>
+                </div>
+                <div>
+                    <a href="/Account/name">Edit Name</a>
+                </div>
+                <div>
+                    <a href="/Account/password">Edit Password</a>
+                </div>
+                <br>
+                <div>
+                    <a href="/Account/delete">Delete Account</a>
+                </div>
+            </body>
+            </html>
+            """.formatted(user.getLoginId(), user.getName());
+
+        httpResponse.setStatusCode(OK);
+        httpResponse.writeBody(html);
         httpResponse.flush();
     }
 }
