@@ -6,11 +6,13 @@ import main.java.com.jaehyeoklim.wasrestboard.httpserver.servlet.base.HttpServle
 
 import java.io.IOException;
 
+import static main.java.com.jaehyeoklim.wasrestboard.httpserver.enums.HttpStatus.*;
+
 public class InternalErrorServlet implements HttpServlet {
 
     @Override
     public void service(HttpRequest request, HttpResponse response) throws IOException {
-        response.setStatusCode(400);
+        response.setStatusCode(INTERNAL_SERVER_ERROR);
         response.writeBody("<h1>Internal Error</h1>");
     }
 }

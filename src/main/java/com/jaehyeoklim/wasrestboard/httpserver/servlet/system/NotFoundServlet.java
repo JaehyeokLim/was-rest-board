@@ -6,11 +6,13 @@ import main.java.com.jaehyeoklim.wasrestboard.httpserver.servlet.base.HttpServle
 
 import java.io.IOException;
 
+import static main.java.com.jaehyeoklim.wasrestboard.httpserver.enums.HttpStatus.*;
+
 public class NotFoundServlet implements HttpServlet {
 
     @Override
     public void service(HttpRequest request, HttpResponse response) throws IOException {
-        response.setStatusCode(404);
+        response.setStatusCode(NOT_FOUND);
         response.writeBody("<h1>404 Not Found</h1>");
     }
 }
