@@ -11,7 +11,7 @@ import java.util.concurrent.Executors;
 import static main.java.com.jaehyeoklim.wasrestboard.util.Logger.log;
 
 public class HttpServer {
-    private final ExecutorService es = Executors.newFixedThreadPool(10);
+    private final ExecutorService executorService = Executors.newFixedThreadPool(10);
     private final ServletManager servletManager;
 
     private final int port;
@@ -37,7 +37,7 @@ public class HttpServer {
                 log("New connection accepted from " + socket.getRemoteSocketAddress());
 
                 HttpRequestHandler httpRequestHandler = new HttpRequestHandler(socket, servletManager);
-                es.submit(httpRequestHandler);
+                executorService.submit(httpRequestHandler);
             } catch (IOException e) {
                 log("Failed to accept connection: " + e.getMessage());
             }
