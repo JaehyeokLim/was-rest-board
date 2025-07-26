@@ -1,79 +1,101 @@
 package main.java.com.jaehyeoklim.wasrestboard.httpserver;
 
+import main.java.com.jaehyeoklim.wasrestboard.httpserver.enums.HttpMethod;
+
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.util.Arrays;
+import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.Map;
 
-import static main.java.com.jaehyeoklim.wasrestboard.util.Logger.log;
+import static java.nio.charset.StandardCharsets.*;
 
 public class HttpRequest {
 
     private String method;
     private String path;
+
     private final Map<String, String> queryParameters = new HashMap<>();
+    private final Map<String, String> headers = new HashMap<>();
 
     public HttpRequest(BufferedReader bufferedReader) throws IOException {
         parseRequestLine(bufferedReader);
+        parseHeaders(bufferedReader);
+        parseBody(bufferedReader);
     }
 
-    /**
-     * 첫 번째 요청 라인(GET /path?name=abc HTTP/1.1 등)을 파싱해서
-     * HTTP 메서드와 경로, 쿼리 파라미터 정보를 추출.
-     *
-     * <p>예시 입력: "GET /users?id=1 HTTP/1.1"</p>
-     * <p>→ method = "GET", path = "/users", query = {id=1}</p>
-     *
-     * @param bufferedReader 요청 입력 스트림 (요청 라인 포함)
-     * @throws IOException 요청 라인이 없거나 잘못된 형식일 경우 발생
-     */
+    // 요청 라인 파싱 (메서드, 경로, 쿼리 파라미터)
     private void parseRequestLine(BufferedReader bufferedReader) throws IOException {
         String requestLine = bufferedReader.readLine();
 
         if (requestLine == null || requestLine.isBlank()) {
             throw new IOException("Empty request line");
         }
-        log("Raw request line: " + requestLine);
 
         String[] parts = requestLine.split(" ");
         if (parts.length < 2) {
             throw new IOException("Invalid request line: " + requestLine);
         }
-        log("Raw request parts " + Arrays.toString(parts));
 
         method = parts[0];
-        log("Parse Method: " + method);
 
         String[] pathParts = parts[1].split("\\?");
         path = pathParts[0];
-        log("Parse path: " + path);
 
-        parseQueryParameters(pathParts);
-        log("Parse query parameters: " + queryParameters);
+        if (pathParts.length > 1) {
+            parseQueryParameters(pathParts[1]);
+        }
     }
 
-    /**
-     * 경로에 포함된 쿼리스트링을 파싱해 key-value 쌍으로 저장.
-     *
-     * <p>예시: "/users?id=1&name=kim"</p>
-     * <p>→ queryParameters = {id=1, name=kim}</p>
-     *
-     * @param pathParts [0]: 경로, [1]: 쿼리 파라미터 문자열
-     */
-    private void parseQueryParameters(String[] pathParts) {
-        if (pathParts.length > 1) {
-            for (String param : pathParts[1].split("&")) {
-                String[] keyValue = param.split("=");
-                String key = keyValue[0];
-                String value = keyValue.length > 1 ? keyValue[1] : "";
-                queryParameters.put(key, value);
-            }
+    // 쿼리 파라미터 파싱 (key=value)
+    private void parseQueryParameters(String queryString) {
+        for (String param : queryString.split("&")) {
+            String[] keyValue = param.split("=");
+            String key = keyValue[0];
+            String value = keyValue.length > 1 ? URLDecoder.decode(keyValue[1], UTF_8) : "";
+            queryParameters.put(key, value);
         }
+    }
+
+    // 헤더 파싱
+    private void parseHeaders(BufferedReader reader) throws IOException {
+        String line;
+        while (!(line = reader.readLine()).isEmpty()) {
+            String[] headerParts = line.split(":");
+            headers.put(headerParts[0].trim(), headerParts[1].trim());
+        }
+    }
+
+    // 요청 본문 파싱 (application/x-www-form-urlencoded 지원)
+    private void parseBody(BufferedReader reader) throws IOException {
+        if (!headers.containsKey("Content-Length")) return;
+
+        int contentLength = Integer.parseInt(headers.get("Content-Length"));
+        char[] bodyChars = new char[contentLength];
+        int read = reader.read(bodyChars);
+
+        if (read != contentLength) {
+            throw new IOException("Failed to read body. Expected " + contentLength + ", but read " + read);
+        }
+
+        String body = new String(bodyChars);
+        String contentType = headers.get("Content-Type");
+
+        if ("application/x-www-form-urlencoded".equals(contentType)) {
+            parseQueryParameters(body);
+        }
+    }
+
+    public HttpMethod getMethod() {
+        return HttpMethod.valueOf(method);
     }
 
     public String getPath() {
         return path;
+    }
+
+    public String getParameter(String name) {
+        return queryParameters.get(name);
     }
 
     @Override
