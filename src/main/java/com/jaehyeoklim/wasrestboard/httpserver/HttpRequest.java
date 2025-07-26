@@ -98,6 +98,24 @@ public class HttpRequest {
         return queryParameters.get(name);
     }
 
+    public String getCookie(String key) {
+        String cookieHeader = headers.get("Cookie");
+        if (cookieHeader == null) return null;
+
+        // "Cookie: sessionId=abc; theme=dark" 와 같은 문자열을 파싱
+        String[] cookieParts = cookieHeader.split(";");
+        for (String cookiePart : cookieParts) {
+
+            // key와 일치하는 쿠키가 있다면 값 반환
+            String[] pair = cookiePart.trim().split("=");
+            if (pair.length == 2 && pair[0].trim().equals(key)) {
+                return pair[1];
+            }
+        }
+
+        return null;
+    }
+
     @Override
     public String toString() {
         return "HttpRequest{method=" + method + ", path=" + path + ", query=" + queryParameters + "}";

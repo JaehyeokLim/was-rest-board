@@ -11,6 +11,7 @@ import java.util.UUID;
 
 import static main.java.com.jaehyeoklim.wasrestboard.httpserver.enums.HttpMethod.*;
 import static main.java.com.jaehyeoklim.wasrestboard.httpserver.enums.HttpStatus.*;
+import static main.java.com.jaehyeoklim.wasrestboard.session.SessionManager.*;
 import static main.java.com.jaehyeoklim.wasrestboard.util.Logger.log;
 import static main.java.com.jaehyeoklim.wasrestboard.util.PasswordEncoder.*;
 import static main.java.com.jaehyeoklim.wasrestboard.util.UUIDGenerator.*;
@@ -40,6 +41,7 @@ public class UserController {
         }
 
         if (!matches(password, user.getPassword())) {
+            log("Passwords don't match");
             httpResponse.setStatusCode(UNAUTHORIZED);
             httpResponse.writeBody("Login failed. Invalid ID or Password");
             httpResponse.writeBody("<a href='/'>Back to Home</a>");
@@ -47,7 +49,32 @@ public class UserController {
             return;
         }
 
-        log("Login successful");
+        String sessionId = createSession(user);
+        httpResponse.addCookie("sessionId", sessionId);
+
+        log("Successfully logged in");
+        httpResponse.setStatusCode(OK);
+        httpResponse.writeBody("Successfully logged in! ");
+        httpResponse.writeBody("<a href='/'>Go to Home</a>");
+        httpResponse.flush();
+    }
+
+    @Mapping(path = "/logout",  method = GET)
+    public void logout(HttpRequest httpRequest, HttpResponse httpResponse) throws IOException {
+        String sessionId = httpRequest.getCookie("sessionId");
+
+        if (sessionId != null) {
+            log("Successfully deleted logged in session: " +  sessionId);
+            httpResponse.addCookie("sessionId", "deleted; Max-Age=0; Path=/");
+            removeSession(sessionId);
+        }
+
+        log("Successfully logged out");
+        httpResponse.setStatusCode(OK);
+        httpResponse.writeBody("Successfully logged out! ");
+        httpResponse.writeBody("<a href='/'>Go to Home</a>");
+        httpResponse.flush();
+
     }
 
     @Mapping(path = "/signup", method = GET)
@@ -120,9 +147,10 @@ public class UserController {
         UUID uuid = generateUUID();
         User user = new User(uuid, loginId, hashedPassword,  name);
         userRepository.add(user);
+
         log("Successfully added user");
         httpResponse.setStatusCode(CREATED);
-        httpResponse.writeBody("Successfully signed up!");
+        httpResponse.writeBody("Successfully signed up! ");
         httpResponse.writeBody("<a href='/'>Back to Home</a>");
         httpResponse.flush();
     }
