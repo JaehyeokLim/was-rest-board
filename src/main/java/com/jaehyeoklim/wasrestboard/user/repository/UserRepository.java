@@ -67,4 +67,32 @@ public class UserRepository {
 
         return null;
     }
+
+    public synchronized void deleteByLoginId(String loginId) {
+        File originalFile = new File(FILE_PATH);
+        File tempFile = new File(FILE_PATH + ".tmp");
+
+        try (BufferedReader bufferedReader = new BufferedReader(new FileReader(originalFile, UTF_8));
+            BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(tempFile, UTF_8))) {
+
+            String line;
+
+            while ((line = bufferedReader.readLine()) != null) {
+                String[] userData = line.split(DELIMITER);
+
+                if (userData.length != 4) continue;
+
+                if (userData[1].equals(loginId)) {
+                    bufferedWriter.write(line);
+                    bufferedWriter.newLine();
+                }
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to delete user by loginId", e);
+        }
+
+        if (!originalFile.delete() || !tempFile.renameTo(originalFile)) {
+            throw new RuntimeException("Failed to replace user file after deletion");
+        }
+    }
 }

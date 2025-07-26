@@ -14,7 +14,7 @@ import static main.java.com.jaehyeoklim.wasrestboard.util.Logger.log;
 public class WasMainController {
 
     @Mapping(path = "/", method = GET)
-    public void mainForm(HttpRequest httpRequest, HttpResponse httpResponse) throws IOException {
+    public void mainForm(HttpRequest httpRequest, HttpResponse httpResponse) {
         String sessionId = httpRequest.getCookie("sessionId");
         User user = (sessionId != null) ? getSession(sessionId) : null;
 

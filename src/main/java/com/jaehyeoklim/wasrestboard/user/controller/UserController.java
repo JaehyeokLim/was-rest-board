@@ -59,14 +59,17 @@ public class UserController {
         httpResponse.flush();
     }
 
-    @Mapping(path = "/logout",  method = GET)
-    public void logout(HttpRequest httpRequest, HttpResponse httpResponse) throws IOException {
+    @Mapping(path = "/logout", method = GET)
+    public void logout(HttpRequest httpRequest, HttpResponse httpResponse) {
         String sessionId = httpRequest.getCookie("sessionId");
 
         if (sessionId != null) {
-            log("Successfully deleted logged in session: " +  sessionId);
+            String loginId = removeSession(sessionId).getLoginId();
+            log("Successfully deleted logged in session: " +  loginId);
             httpResponse.addCookie("sessionId", "deleted; Max-Age=0; Path=/");
-            removeSession(sessionId);
+            log("Successfully deleted logged in session: " + sessionId);
+        } else {
+            log("No session ID found during logout");
         }
 
         log("Successfully logged out");
@@ -74,11 +77,10 @@ public class UserController {
         httpResponse.writeBody("Successfully logged out! ");
         httpResponse.writeBody("<a href='/'>Go to Home</a>");
         httpResponse.flush();
-
     }
 
     @Mapping(path = "/signup", method = GET)
-    public void signupForm(HttpRequest httpRequest, HttpResponse httpResponse) throws IOException {
+    public void signupForm(HttpResponse httpResponse) {
         String html =
                 """
                 <html>
@@ -131,7 +133,7 @@ public class UserController {
     }
 
     @Mapping(path = "/signup", method = POST)
-    public void signup(HttpRequest httpRequest, HttpResponse httpResponse) throws IOException {
+    public void signup(HttpRequest httpRequest, HttpResponse httpResponse) {
         String loginId = httpRequest.getParameter("loginId");
         String hashedPassword = hash(httpRequest.getParameter("password"));
         String name = httpRequest.getParameter("name");
@@ -152,6 +154,109 @@ public class UserController {
         httpResponse.setStatusCode(CREATED);
         httpResponse.writeBody("Successfully signed up! ");
         httpResponse.writeBody("<a href='/'>Back to Home</a>");
+        httpResponse.flush();
+    }
+
+
+    @Mapping(path = "/account", method = GET)
+    public void account(HttpRequest httpRequest, HttpResponse httpResponse) {
+        String sessionId = httpRequest.getCookie("sessionId");
+        User user = (sessionId != null) ? getSession(sessionId) : null;
+
+        if (user == null) {
+            log("Unauthorized access to account");
+            httpResponse.setStatusCode(UNAUTHORIZED);
+            httpResponse.writeBody("Unauthorized access to account! ");
+            httpResponse.writeBody("<a href='/'>Back to Home</a>");
+            httpResponse.flush();
+            return;
+        }
+
+        String html = """
+            <html>
+            <body>
+                <h1>Account</h1>
+                <div>
+                    <p>ID: %s</p>
+                </div>
+                <div>
+                    <p>Name: %s</p>
+                </div>
+                <div>
+                    <a href="/account/name">Edit Name</a>
+                </div>
+                <div>
+                    <a href="/account/password">Edit Password</a>
+                </div>
+                <br>
+                <div>
+                    <a href="/account/delete">Delete Account</a>
+                </div>
+            </body>
+            </html>
+            """.formatted(user.getLoginId(), user.getName());
+
+        httpResponse.setStatusCode(OK);
+        httpResponse.writeBody(html);
+        httpResponse.flush();
+    }
+
+    @Mapping(path = "/account/delete", method = GET)
+    public void deleteAccountForm(HttpRequest httpRequest, HttpResponse httpResponse) {
+        String sessionId = httpRequest.getCookie("sessionId");
+        User user = (sessionId != null) ? getSession(sessionId) : null;
+
+        if (user == null) {
+            log("Unauthorized access to delete account");
+            httpResponse.setStatusCode(UNAUTHORIZED);
+            httpResponse.writeBody("Unauthorized access to delete account! ");
+            httpResponse.writeBody("<a href='/'>Back to Home</a>");
+            httpResponse.flush();
+        }
+
+        String html = """
+        <html>
+        <body>
+            <h1>Delete Account</h1>
+            <p>Are you sure you want to delete your account?</p>
+            <p><strong>This action is irreversible and your data will be deleted immediately.</strong></p>
+            <form action="/account/delete" method="POST">
+                <button type="submit">Confirm Deletion</button>
+            </form>
+            <br>
+            <a href="/account">Go Back</a>
+        </body>
+        </html>
+        """;
+
+        httpResponse.setStatusCode(OK);
+        httpResponse.writeBody(html);
+        httpResponse.flush();
+    }
+
+    @Mapping(path = "/account/delete", method = POST)
+    public void deleteAccount(HttpRequest httpRequest, HttpResponse httpResponse) {
+        String sessionId = httpRequest.getCookie("sessionId");
+        User user = (sessionId != null) ? getSession(sessionId) : null;
+
+        if (user == null) {
+            log("Unauthorized access to delete account");
+            httpResponse.setStatusCode(UNAUTHORIZED);
+            httpResponse.writeBody("Unauthorized access to delete account! ");
+            httpResponse.writeBody("<a href='/'>Back to Home</a>");
+            httpResponse.flush();
+        }
+
+        String loginId = removeSession(sessionId).getLoginId();
+        httpResponse.addCookie("sessionId", "deleted; Max-Age=0; Path=/");
+        log("Successfully deleted logged in session: " + sessionId);
+
+        userRepository.deleteByLoginId(loginId);
+        log("Successfully deleted logged in user!");
+
+        httpResponse.setStatusCode(OK);
+        httpResponse.writeBody("Successfully deleted logged in user!");
+        httpResponse.writeBody("<a href='/'>Go to Home</a>");
         httpResponse.flush();
     }
 }

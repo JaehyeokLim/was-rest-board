@@ -21,7 +21,7 @@ public class SessionManager {
         return sessionStore.get(id);
     }
 
-    public static void removeSession(String id) {
-        sessionStore.remove(id);
+    public static User removeSession(String id) {
+        return sessionStore.remove(id);
     }
 }
