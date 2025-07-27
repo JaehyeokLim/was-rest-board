@@ -82,7 +82,7 @@ public class UserRepository {
 
                 if (userData.length != 4) continue;
 
-                if (userData[1].equals(loginId)) {
+                if (!userData[1].equals(loginId)) {
                     bufferedWriter.write(line);
                     bufferedWriter.newLine();
                 }
@@ -93,6 +93,43 @@ public class UserRepository {
 
         if (!originalFile.delete() || !tempFile.renameTo(originalFile)) {
             throw new RuntimeException("Failed to replace user file after deletion");
+        }
+    }
+
+    public synchronized void update(User user) {
+        File originalFile = new File(FILE_PATH);
+        File tempFile = new File(FILE_PATH + ".tmp");
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(originalFile, UTF_8));
+             BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile, UTF_8))) {
+
+            String line;
+
+            while ((line = reader.readLine()) != null) {
+                String[] userData = line.split(DELIMITER);
+
+                if (userData.length != 4) continue;
+
+                String currentLoginId = userData[1];
+
+                if (currentLoginId.equals(user.getLoginId())) {
+                    String updatedLine = user.getId() + DELIMITER +
+                            user.getLoginId() + DELIMITER +
+                            user.getPassword() + DELIMITER +
+                            user.getName();
+                    writer.write(updatedLine);
+                } else {
+                    writer.write(line);
+                }
+                writer.newLine();
+            }
+
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to update user by loginId", e);
+        }
+
+        if (!originalFile.delete() || !tempFile.renameTo(originalFile)) {
+            throw new RuntimeException("Failed to replace user file after update");
         }
     }
 }

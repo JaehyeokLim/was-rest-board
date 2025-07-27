@@ -32,6 +32,14 @@ public class User {
         return name;
     }
 
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
     @Override
     public String toString() {
         return String.format("Member[UUID=%s, loginId=%s, name=%s]", id, loginId, name);

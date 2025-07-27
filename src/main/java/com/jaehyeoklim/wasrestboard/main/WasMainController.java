@@ -5,8 +5,6 @@ import main.java.com.jaehyeoklim.wasrestboard.httpserver.HttpResponse;
 import main.java.com.jaehyeoklim.wasrestboard.httpserver.servlet.annotation.Mapping;
 import main.java.com.jaehyeoklim.wasrestboard.user.domain.User;
 
-import java.io.IOException;
-
 import static main.java.com.jaehyeoklim.wasrestboard.httpserver.enums.HttpMethod.*;
 import static main.java.com.jaehyeoklim.wasrestboard.session.SessionManager.*;
 import static main.java.com.jaehyeoklim.wasrestboard.util.Logger.log;
@@ -24,6 +22,10 @@ public class WasMainController {
 
             String html = """
             <html>
+                <style>
+                    body { font-family: sans-serif; margin: 40px; }
+                    form { margin-bottom: 20px; }
+                </style>
             <body>
                 <h1>Hello!, %s!</h1>
                 <div>
