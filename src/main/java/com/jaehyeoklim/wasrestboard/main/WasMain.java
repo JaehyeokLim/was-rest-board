@@ -1,5 +1,7 @@
 package main.java.com.jaehyeoklim.wasrestboard.main;
 
+import main.java.com.jaehyeoklim.wasrestboard.board.controller.PostController;
+import main.java.com.jaehyeoklim.wasrestboard.board.repository.PostRepository;
 import main.java.com.jaehyeoklim.wasrestboard.httpserver.HttpServer;
 import main.java.com.jaehyeoklim.wasrestboard.httpserver.servlet.ServletManager;
 import main.java.com.jaehyeoklim.wasrestboard.httpserver.servlet.annotation.AnnotationServlet;
@@ -15,10 +17,13 @@ public class WasMain {
 
     public static void main(String[] args) throws IOException {
         UserRepository userRepository = new UserRepository();
+        PostRepository postRepository = new PostRepository();
 
         WasMainController wasMainController = new WasMainController();
         UserController userController = new UserController(userRepository);
-        AnnotationServlet annotationServlet = new AnnotationServlet(List.of(wasMainController, userController));
+        PostController postController = new PostController(postRepository);
+
+        AnnotationServlet annotationServlet = new AnnotationServlet(List.of(wasMainController, userController, postController));
 
         DiscardServlet discardServlet = new DiscardServlet();
 
