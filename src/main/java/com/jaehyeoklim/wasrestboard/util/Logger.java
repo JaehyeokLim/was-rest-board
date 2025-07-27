@@ -3,7 +3,9 @@ package main.java.com.jaehyeoklim.wasrestboard.util;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 
-public abstract class Logger {
+public final class Logger {
+
+    private Logger() {}
 
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss,SSS");
 

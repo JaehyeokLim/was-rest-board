@@ -13,7 +13,9 @@ import org.mindrot.jbcrypt.BCrypt;
  * String hash = PasswordEncoder.hash("mypw");
  * boolean match = PasswordEncoder.matches("mypw", hash);</p>
  */
-public class PasswordEncoder {
+public final class PasswordEncoder {
+
+    private PasswordEncoder() {}
 
     public static String hash(String rawPassword) {
         return BCrypt.hashpw(rawPassword, BCrypt.gensalt());

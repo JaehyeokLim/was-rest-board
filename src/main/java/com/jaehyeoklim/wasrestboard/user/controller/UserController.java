@@ -5,12 +5,14 @@ import main.java.com.jaehyeoklim.wasrestboard.httpserver.HttpResponse;
 import main.java.com.jaehyeoklim.wasrestboard.httpserver.servlet.annotation.Mapping;
 import main.java.com.jaehyeoklim.wasrestboard.user.domain.User;
 import main.java.com.jaehyeoklim.wasrestboard.user.repository.UserRepository;
+import main.java.com.jaehyeoklim.wasrestboard.util.AuthenticationHelper;
 
 import java.util.UUID;
 
 import static main.java.com.jaehyeoklim.wasrestboard.httpserver.enums.HttpMethod.*;
 import static main.java.com.jaehyeoklim.wasrestboard.httpserver.enums.HttpStatus.*;
 import static main.java.com.jaehyeoklim.wasrestboard.session.SessionManager.*;
+import static main.java.com.jaehyeoklim.wasrestboard.util.AuthenticationHelper.*;
 import static main.java.com.jaehyeoklim.wasrestboard.util.Logger.log;
 import static main.java.com.jaehyeoklim.wasrestboard.util.PasswordEncoder.*;
 import static main.java.com.jaehyeoklim.wasrestboard.util.UUIDGenerator.*;
@@ -21,21 +23,6 @@ public class UserController {
 
     public UserController(UserRepository userRepository) {
         this.userRepository = userRepository;
-    }
-
-    private User getAuthenticatedUser(HttpRequest httpRequest, HttpResponse httpResponse) {
-        String sessionId = httpRequest.getCookie("sessionId");
-        User user = (sessionId != null) ? getSession(sessionId) : null;
-
-        if (user == null) {
-            log("Unauthorized access attempt");
-            httpResponse.setStatusCode(UNAUTHORIZED);
-            httpResponse.writeBody("Unauthorized access. ");
-            httpResponse.writeBody("<a href='/'>Back to Home</a>");
-            httpResponse.flush();
-        }
-
-        return user;
     }
 
     @Mapping(path = "/login", method = POST)
@@ -162,6 +149,7 @@ public class UserController {
     @Mapping(path = "/account", method = GET)
     public void account(HttpRequest httpRequest, HttpResponse httpResponse) {
         User user = getAuthenticatedUser(httpRequest, httpResponse);
+        if (user == null) return;
 
         String html = """
             <html>
@@ -204,6 +192,7 @@ public class UserController {
     @Mapping(path = "/account/delete", method = GET)
     public void deleteAccountForm(HttpRequest httpRequest, HttpResponse httpResponse) {
         User user = getAuthenticatedUser(httpRequest, httpResponse);
+        if (user == null) return;
 
         String html = """
         <html>
@@ -232,9 +221,11 @@ public class UserController {
     @Mapping(path = "/account/delete", method = POST)
     public void deleteAccount(HttpRequest httpRequest, HttpResponse httpResponse) {
         User user = getAuthenticatedUser(httpRequest, httpResponse);
-        String sessionId = httpRequest.getCookie("sessionId");
+        if (user == null) return;
 
+        String sessionId = httpRequest.getCookie("sessionId");
         String loginId = removeSession(sessionId).getLoginId();
+
         httpResponse.addCookie("sessionId", "deleted; Max-Age=0; Path=/");
         log("Successfully deleted logged in session: " + sessionId);
 
@@ -282,6 +273,7 @@ public class UserController {
     @Mapping(path = "/account/password", method = GET)
     public void editPasswordForm(HttpRequest httpRequest, HttpResponse httpResponse) {
         User user = getAuthenticatedUser(httpRequest, httpResponse);
+        if (user == null) return;
 
         String html = """
         <html>
@@ -325,6 +317,8 @@ public class UserController {
     @Mapping(path = "/account/name", method = POST)
     public void editName(HttpRequest httpRequest, HttpResponse httpResponse) {
         User user = getAuthenticatedUser(httpRequest, httpResponse);
+        if (user == null) return;
+
         String newName = httpRequest.getParameter("name");
         user.setName(newName);
         userRepository.update(user);
@@ -338,6 +332,8 @@ public class UserController {
     @Mapping(path = "/account/password", method = POST)
     public void editPassword(HttpRequest httpRequest, HttpResponse httpResponse) {
         User user =  getAuthenticatedUser(httpRequest, httpResponse);
+        if (user == null) return;
+
         String currentPassword = httpRequest.getParameter("currentPassword");
         String newPassword = httpRequest.getParameter("newPassword");
         String confirmPassword = httpRequest.getParameter("confirmPassword");

@@ -3,7 +3,6 @@ package main.java.com.jaehyeoklim.wasrestboard.board.repository;
 import main.java.com.jaehyeoklim.wasrestboard.board.domain.Post;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
@@ -98,6 +97,71 @@ public class PostRepository {
             return List.of();
         } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    public synchronized void deleteByPostId(String postId) {
+        File originalFile = new File(FILE_PATH);
+        File tempFile = new File(FILE_PATH + ".tmp");
+
+        try (BufferedReader bufferedReader = new BufferedReader(new FileReader(originalFile, UTF_8));
+             BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(tempFile, UTF_8))) {
+
+            String line;
+
+            while ((line = bufferedReader.readLine()) != null) {
+                String[] postData = line.split(DELIMITER);
+
+                if (postData.length != 5) continue;
+
+                if (!postData[0].equals(postId)) {
+                    bufferedWriter.write(line);
+                    bufferedWriter.newLine();
+                }
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to delete post by postId", e);
+        }
+
+        if (!originalFile.delete() || !tempFile.renameTo(originalFile)) {
+            throw new RuntimeException("Failed to replace post file after deletion");
+        }
+    }
+
+    public synchronized void update(String postId, String title, String content) {
+        File originalFile = new File(FILE_PATH);
+        File tempFile = new File(FILE_PATH + ".tmp");
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(originalFile, UTF_8));
+             BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile, UTF_8))) {
+
+            String line;
+
+            while ((line = reader.readLine()) != null) {
+                String[] postData = line.split(DELIMITER);
+
+                if (postData.length != 5) continue;
+
+                String currentPostId = postData[0];
+
+                if (currentPostId.equals(postId)) {
+                    String updatedLine = currentPostId + DELIMITER +
+                            postData[1] + DELIMITER +
+                            postData[2] + DELIMITER +
+                            title + DELIMITER +
+                            content;
+                    writer.write(updatedLine);
+                } else {
+                    writer.write(line);
+                }
+                writer.newLine();
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to update post by postId", e);
+        }
+
+        if (!originalFile.delete() || !tempFile.renameTo(originalFile)) {
+            throw new RuntimeException("Failed to replace post file after update");
         }
     }
 }
